@@ -59,7 +59,7 @@ class BeerControllerTest {
                         .param("isCold", "yes")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(document("v1/beer",
+                .andDo(document("v1/beer-get",
                         pathParameters(
                                 parameterWithName("beerId").description("UUID of desired beer to get")
                         ),
@@ -91,7 +91,7 @@ class BeerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(beerDtoJson))
                 .andExpect(status().isCreated())
-                .andDo(document("v1/beer",
+                .andDo(document("v1/beer-new",
                         requestFields(
                                 fields.withPath("id").ignored().description("Beer ID - will be created and returned by the server"),
                                 fields.withPath("version").ignored().description("Version number - will be created and returned by the server"),
@@ -110,10 +110,24 @@ class BeerControllerTest {
         BeerDto beerDto =  getValidBeerDto();
         String beerDtoJson = objectMapper.writeValueAsString(beerDto);
 
+        ConstrainedFields fields = new ConstrainedFields(BeerDto.class);
+
         mockMvc.perform(put("/api/v1/beer/" + UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(beerDtoJson))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andDo(document("v1/beer-update",
+                        requestFields(
+                                fields.withPath("id").ignored().description("Beer ID - will be created and returned by the server"),
+                                fields.withPath("version").ignored().description("Version number - will be created and returned by the server"),
+                                fields.withPath("createdDate").ignored().description("Date created - will be created and returned by the server"),
+                                fields.withPath("lastModifiedDate").ignored().description("Date updated - will be created and returned by the server"),
+                                fields.withPath("beerName").type(JsonFieldType.STRING).description("Beer name"),
+                                fields.withPath("beerStyle").type(JsonFieldType.STRING).description("Beer style"),
+                                fields.withPath("price").type(JsonFieldType.NUMBER).description("Beer Price"),
+                                fields.withPath("upc").type(JsonFieldType.NUMBER).description("UPC number"),
+                                fields.withPath("quantityOnHand").ignored().description("Quantity on Hand - leaving null to process later")
+                        )));;
     }
 
     BeerDto getValidBeerDto(){
