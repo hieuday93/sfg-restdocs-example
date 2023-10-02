@@ -14,9 +14,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,8 +28,9 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(RestDocumentationExtension.class)
@@ -46,13 +50,31 @@ class BeerControllerTest {
 
     @Test
     void getBeerById() throws Exception {
-        given(beerRepository.findById(any())).willReturn(Optional.of(Beer.builder().build()));
+        given(beerRepository.findById(any())).willReturn(Optional.of(getValidBeer()));
 
-        mockMvc.perform(get("/api/v1/beer/{beerId}", UUID.randomUUID()).accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/beer/{beerId}", UUID.randomUUID())
+                        .param("isCold", "yes")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(document("v1/beer", pathParameters(
-                        parameterWithName("beerId").description("UUID of desired beer to get")
-                )));
+                .andDo(document("v1/beer",
+                        pathParameters(
+                                parameterWithName("beerId").description("UUID of desired beer to get")
+                        ),
+                        queryParameters(
+                                parameterWithName("isCold").description("Is Beer Cold Query param")
+                        ),
+                        responseFields(
+                                fieldWithPath("id").type(JsonFieldType.STRING).description("Id of Beer"),
+                                fieldWithPath("version").type(JsonFieldType.NUMBER).description("Version number"),
+                                fieldWithPath("createdDate").type(JsonFieldType.STRING).description("Date created"),
+                                fieldWithPath("lastModifiedDate").type(JsonFieldType.STRING).description("Date updated"),
+                                fieldWithPath("beerName").optional().type(JsonFieldType.STRING).description("Beer name"),
+                                fieldWithPath("beerStyle").optional().type(JsonFieldType.STRING).description("Beer style"),
+                                fieldWithPath("upc").type(JsonFieldType.NUMBER).description("UPC of Beer"),
+                                fieldWithPath("price").optional().type(JsonFieldType.NUMBER).description("Price"),
+                                fieldWithPath("quantityOnHand").optional().type(JsonFieldType.NUMBER).description("Quantity on Hand")
+                        )
+                ));
     }
 
     @Test
@@ -85,6 +107,21 @@ class BeerControllerTest {
                 .upc(123123123123L)
                 .build();
 
+    }
+
+    Beer getValidBeer() {
+        return Beer.builder()
+                .id(UUID.randomUUID())
+                .version(1L)
+                .createdDate(Timestamp.valueOf(LocalDateTime.now()))
+                .lastModifiedDate(Timestamp.valueOf(LocalDateTime.now()))
+                .beerName("Nice Ale")
+                .beerStyle("ALE")
+                .upc(123L)
+                .price(BigDecimal.valueOf(100000.0))
+                .minOnHand(10)
+                .quantityToBrew(10)
+                .build();
     }
 
 }
